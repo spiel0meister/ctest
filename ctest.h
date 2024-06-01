@@ -125,23 +125,27 @@ void test_register_(const char* name, test_function_t test) {
     tests_global[i] = (Test){ name, test, i };
 }
 
-static pthread_mutex_t printf_mutex;
 static bool print_passes;
-static TestResult test_run(size_t i) {
-    TestResult result = (tests_global[i].test)();
-    if (result.type == SUCCESS) {
-        pthread_mutex_lock(&printf_mutex);
+
+TestResult results[TESTS_MAX] = {};
+void* test_run_job(void* arg) {
+    Test* test = (Test*)arg;
+    TestResult result = tests_global[test->i].test();
+    results[test->i] = result;
+    return &results[test->i];
+}
+
+static void print_result(size_t i, TestResult* result) {
+    if (result->type == SUCCESS) {
         if (print_passes) printf("\x1b[1;32mPASS\x1b[1;0m: %s\n", tests_global[i].name);
-        pthread_mutex_unlock(&printf_mutex);
     } else {
-        pthread_mutex_lock(&printf_mutex);
-        printf("\x1b[1;31mFAILURE\x1b[1;0m: %s: %s:%d: ", tests_global[i].name, result.file, result.line);
-        switch (result.type) {
+        printf("\x1b[1;31mFAILURE\x1b[1;0m: %s: %s:%d: ", tests_global[i].name, result->file, result->line);
+        switch (result->type) {
             case ASSERT:
-                printf("Assertion Failed: '%s' is false\n", result.as.assert);
+                printf("Assertion Failed: '%s' is false\n", result->as.assert);
                 break;
             case ASSERT_NEG:
-                printf("Assertion Failed: '%s' is true\n", result.as.assert_neg);
+                printf("Assertion Failed: '%s' is true\n", result->as.assert_neg);
                 break;
             case ASSERT_EQ:
             case ASSERT_NQ:
@@ -149,7 +153,7 @@ static TestResult test_run(size_t i) {
             case ASSERT_GT:
             case ASSERT_LTE:
             case ASSERT_GTE:
-                BooleanOp bool_op = result.as.assert_eq;
+                BooleanOp bool_op = result->as.assert_eq;
                 printf("Assertion Failed: %s (left is '%s', right is '%s')\n", bool_op.msg, bool_op.left, bool_op.right);
                 break;
             case SUCCESS: 
@@ -157,22 +161,10 @@ static TestResult test_run(size_t i) {
             default:
                 assert(0);
         }
-        pthread_mutex_unlock(&printf_mutex);
     }
-    return result;
-}
-
-
-TestResult results[TESTS_MAX] = {};
-void* test_run_job(void* arg) {
-    Test* test = (Test*)arg;
-    TestResult result = test_run(test->i);
-    results[test->i] = result;
-    return &results[test->i];
 }
 
 void test_run_all_async_(const char* file, bool print_passes_) {
-    pthread_mutex_init(&printf_mutex, NULL);
     size_t success = 0;
     size_t failed = 0;
     print_passes = print_passes_;
@@ -185,6 +177,7 @@ void test_run_all_async_(const char* file, bool print_passes_) {
     for (size_t i = 0; i < tests_count; i++) {
         TestResult* result;
         pthread_join(threads[i], (void**)&result);
+        print_result(i, result);
         if (result->type == SUCCESS) success++;
         else failed++;
     }
@@ -196,8 +189,9 @@ void test_run_all_sync_(const char* file, bool print_passes_) {
     size_t failed = 0;
     print_passes = print_passes_;
     for (size_t i = 0; i < tests_count; i++) {
-        TestResult result = test_run(i);
-        if (result.type == SUCCESS) success++;
+        TestResult* result = test_run_job(&tests_global[i]);
+        print_result(i, result);
+        if (result->type == SUCCESS) success++;
         else failed++;
     }
     printf("%s: %ld tests: %ld \x1b[1;32mPASS\x1b[1;0m, %ld \x1b[1;31mFAIL\x1b[1;0m\n", file, tests_count, success, failed);
