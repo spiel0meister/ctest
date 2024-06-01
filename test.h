@@ -31,7 +31,8 @@ void error_buffer_write(const char* fmt, ...);
 void test_register_(const char* name, test_function_t test);
 #define test_register(f) test_register_(#f, f)
 
-void test_run_all();
+void test_run_all_(char* file);
+#define test_run_all() test_run_all_(__FILE__)
 #endif // TEST_H
 
 #ifdef TEST_IMPLEMENTATION
@@ -65,7 +66,7 @@ void test_register_(const char* name, test_function_t test) {
     tests_global[tests_count++] = (Test){ name, test };
 }
 
-void test_run_all() {
+void test_run_all_(char* file) {
     size_t success = 0;
     size_t failed = 0;
     for (size_t i = 0; i < tests_count; i++) {
@@ -77,6 +78,6 @@ void test_run_all() {
             failed++;
         }
     }
-    printf("%ld tests: %ld pass, %ld fail\n", tests_count, success, failed);
+    printf("%s: %ld tests: %ld pass, %ld fail\n", file, tests_count, success, failed);
 }
 #endif
