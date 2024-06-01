@@ -38,51 +38,54 @@ typedef union {
 typedef struct {
     TestResultType type;
     TestResultAs as;
+
+    const char* file;
+    int line;
 }TestResult;
 
-#define TEST_SUCCES ((TestResult) { SUCCESS, {0} })
+#define TEST_SUCCES ((TestResult) { SUCCESS, {0}, 0, 0 })
 
 typedef TestResult (*test_function_t)(void);
 typedef struct Test Test;
 
 //error_buffer_write("%s:%d: Assertion failed: '%s' is false\n", __FILE__, __LINE__, #expr);
 #define test_assert(expr) if (!(expr)) { \
-        return ((TestResult) { ASSERT, .as.assert = #expr }); \
+        return ((TestResult) { ASSERT, .as.assert = #expr, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: '%s' is true\n", __FILE__, __LINE__, #expr);
 #define test_assert_neg(expr) if (expr) { \
-        return ((TestResult) { ASSERT_NEG, .as.assert_neg = #expr }); \
+        return ((TestResult) { ASSERT_NEG, .as.assert_neg = #expr, __FILE__, __LINE__  }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is different from right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_eq(left, right) if ((left) != (right)) { \
-        return ((TestResult) { ASSERT_EQ, .as.assert_eq = { #left, #right, "left is different from right" } }); \
+        return ((TestResult) { ASSERT_EQ, .as.assert_eq = { #left, #right, "left is different from right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_nq(left, right) if ((left) == (right)) { \
-        return ((TestResult) { ASSERT_NQ, .as.assert_nq = { #left, #right, "left is equal to right" } }); \
+        return ((TestResult) { ASSERT_NQ, .as.assert_nq = { #left, #right, "left is equal to right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is greater or equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_lt(left, right) if ((left) >= (right)) { \
-        return ((TestResult) { ASSERT_LT, .as.assert_lt = { #left, #right, "left is greater or equal to right" } }); \
+        return ((TestResult) { ASSERT_LT, .as.assert_lt = { #left, #right, "left is greater or equal to right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is less or equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_gt(left, right) if ((left) <= (right)) { \
-        return ((TestResult) { ASSERT_GT, .as.assert_gt = { #left, #right, "left is less or equal to right" } }); \
+        return ((TestResult) { ASSERT_GT, .as.assert_gt = { #left, #right, "left is less or equal to right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is greater than right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_lte(left, right) if ((left) > (right)) { \
-        return ((TestResult) { ASSERT_LTE, .as.assert_lte = { #left, #right, "left is greater than right" } }); \
+        return ((TestResult) { ASSERT_LTE, .as.assert_lte = { #left, #right, "left is greater than right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is less than right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_gte(left, right) if ((left) < (right)) { \
-        return ((TestResult) { ASSERT_GTE, .as.assert_gte = { #left, #right, "left is less than right" } }); \
+        return ((TestResult) { ASSERT_GTE, .as.assert_gte = { #left, #right, "left is less than right" }, __FILE__, __LINE__ }); \
     }
 
 void error_buffer_write(const char* fmt, ...);
@@ -132,7 +135,7 @@ static TestResult test_run(size_t i) {
         pthread_mutex_unlock(&printf_mutex);
     } else {
         pthread_mutex_lock(&printf_mutex);
-        printf("\x1b[1;31mFAILURE\x1b[1;0m: %s: ", tests_global[i].name);
+        printf("\x1b[1;31mFAILURE\x1b[1;0m: %s: %s:%d: ", tests_global[i].name, result.file, result.line);
         switch (result.type) {
             case ASSERT:
                 printf("Assertion Failed: '%s' is false\n", result.as.assert);
