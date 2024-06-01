@@ -1,4 +1,4 @@
-TESTS=add
+TESTS=op
 
 .PHONY: test
 test: $(foreach test, $(TESTS), tests/$(test))
