@@ -1,5 +1,5 @@
 #define TEST_IMPLEMENTATION
-#include "../test.h"
+#include "../ctest.h"
 
 int add(int a, int b) {
     return a + b;
