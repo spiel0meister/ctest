@@ -48,7 +48,7 @@ struct Test {
 
 #define ERRORBUF_LEN 1024
 static char error_buffer[ERRORBUF_LEN] = {};
-void error_buffer_write(char* buf, const char* fmt, ...) {
+void error_buffer_write(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vsnprintf(error_buffer, ERRORBUF_LEN - 1, fmt, args);
