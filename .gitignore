@@ -1,1 +1,3 @@
 .clangd
+tests/*
+!tests/*.c
