@@ -31,7 +31,7 @@ void error_buffer_write(const char* fmt, ...);
 void test_register_(const char* name, test_function_t test);
 #define test_register(f) test_register_(#f, f)
 
-void test_run_all_(char* file);
+void test_run_all_(const char* file);
 #define test_run_all() test_run_all_(__FILE__)
 #endif // TEST_H
 
@@ -48,7 +48,7 @@ struct Test {
 
 #define ERRORBUF_LEN 1024
 static char error_buffer[ERRORBUF_LEN] = {};
-void error_buffer_write(const char* fmt, ...) {
+void error_buffer_write(char* buf, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vsnprintf(error_buffer, ERRORBUF_LEN - 1, fmt, args);
@@ -66,7 +66,7 @@ void test_register_(const char* name, test_function_t test) {
     tests_global[tests_count++] = (Test){ name, test };
 }
 
-void test_run_all_(char* file) {
+void test_run_all_(const char* file) {
     size_t success = 0;
     size_t failed = 0;
     for (size_t i = 0; i < tests_count; i++) {
