@@ -23,8 +23,7 @@ int randnum(int min, int max) {
     return rand() % (max - min + 1) + min;
 }
 
-TestResult add_test(void) {
-    test_assert(true); // bad example
+Test(add_test) {
     test_assert_eq(add(1, 1), 2);
     test_assert_nq(add(1, 1), 3);
 
@@ -36,7 +35,7 @@ TestResult add_test(void) {
     return TEST_SUCCES;
 }
 
-TestResult sub_test(void) {
+Test(sub_test) {
     test_assert_eq(sub(1, 1), 0);
     test_assert_nq(sub(1, 1), 1);
 
@@ -45,7 +44,7 @@ TestResult sub_test(void) {
     return TEST_SUCCES;
 }
 
-TestResult mul_test(void) {
+Test(mul_test) {
     test_assert_eq(mul(1, 1), 1);
     test_assert_eq(mul(1, 0), 0);
     test_assert_eq(mul(0, 1), 0);
@@ -53,14 +52,14 @@ TestResult mul_test(void) {
     return TEST_SUCCES;
 }
 
-TestResult div_test(void) {
+Test(div_test) {
     test_assert_eq(div_(1, 1), 1);
     test_assert_eq(div_(2, 2), 1);
 
     return TEST_SUCCES;
 }
 
-TestResult randnum_test(void) {
+Test(randnum_test) {
     test_assert_in_range(0, 10, randnum(0, 10));
     test_assert_in_range(0, 100, randnum(0, 100));
     return TEST_SUCCES;
@@ -73,7 +72,7 @@ int main(void) {
     test_register(div_test);
     test_register(randnum_test);
 
-    test_run_all_async(true);
+    test_run_all_sync(true);
 
     return 0;
 }

@@ -1,3 +1,26 @@
+/*
+ *  Copyright 2024 Alexey Kutepov <reximkut@gmail.com>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining
+ *  a copy of this software and associated documentation files (the
+ *  "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish,
+ *  distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to
+ *  the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be
+ *  included in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 #ifndef TEST_H
 #define TEST_H
 #include <stdbool.h>
@@ -94,7 +117,7 @@ typedef struct Test Test;
         return ((TestResult) { ASSERT_RANGE, .as.assert_range = { #min, #max, #value }, __FILE__, __LINE__ }); \
     }
 
-void error_buffer_write(const char* fmt, ...);
+#define Test(name) TestResult name(void)
 
 void test_register_(const char* name, test_function_t test);
 #define test_register(f) test_register_(#f, f)
@@ -120,7 +143,7 @@ struct Test {
 };
 
 #ifndef TESTS_MAX
-    #define TESTS_MAX 1024
+    #define TESTS_MAX 128
 #endif // TESTS_MAX
 
 static Test tests_global[TESTS_MAX] = {};
@@ -131,16 +154,14 @@ void test_register_(const char* name, test_function_t test) {
     tests_global[i] = (Test){ name, test, i };
 }
 
-static bool print_passes;
-
 TestResult results[TESTS_MAX] = {};
 void* test_run_job(void* arg) {
     Test* test = (Test*)arg;
-    TestResult result = tests_global[test->i].test();
-    results[test->i] = result;
+    results[test->i] = tests_global[test->i].test();
     return &results[test->i];
 }
 
+static bool print_passes;
 static void print_result(size_t i, TestResult* result) {
     if (result->type == SUCCESS) {
         if (print_passes) printf("\x1b[1;32mPASS\x1b[1;0m: %s\n", tests_global[i].name);
@@ -167,9 +188,9 @@ static void print_result(size_t i, TestResult* result) {
                 printf("Assertion Failed: value is out of range (value is '%s', min is '%s', max is '%s')\n", range_assert.value, range_assert.min, range_assert.max);
                 break;
             case SUCCESS: 
-                assert(0);
+                assert(0 && "Unreachable");
             default:
-                assert(0);
+                assert(0 && "Unhandled");
         }
     }
 }
