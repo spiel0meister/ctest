@@ -30,13 +30,10 @@ typedef enum {
     SUCCESS = 0,
 
     ASSERT,
-    ASSERT_NEG,
-    ASSERT_EQ,
-    ASSERT_NQ,
-    ASSERT_LT,
-    ASSERT_GT,
-    ASSERT_LTE,
-    ASSERT_GTE,
+    ASSERT_NOT,
+    ASSERT_NULL,
+    ASSERT_NOT_NULL,
+    ASSERT_BOOL,
     ASSERT_RANGE
 }TestResultType;
 
@@ -55,7 +52,6 @@ typedef struct {
 
 typedef union {
     const char* assert;
-    const char* assert_neg;
     BooleanOp assert_bool;
     RangeAssert assert_range;
 }TestResultAs;
@@ -68,7 +64,7 @@ typedef struct {
     int line;
 }TestResult;
 
-#define TEST_SUCCES ((TestResult) { SUCCESS, {0}, 0, 0 })
+#define TEST_SUCCES ((TestResult) { .type = SUCCESS })
 
 typedef TestResult (*test_function_t)(void);
 typedef struct Test Test;
@@ -79,42 +75,50 @@ typedef struct Test Test;
     }
 
 // error_buffer_write("%s:%d: Assertion failed: '%s' is true\n", __FILE__, __LINE__, #expr);
-#define test_assert_neg(expr) if (expr) { \
-        return ((TestResult) { ASSERT_NEG, .as.assert_neg = #expr, __FILE__, __LINE__  }); \
+#define test_assert_not(expr) if (expr) { \
+        return ((TestResult) { ASSERT_NOT, .as.assert = #expr, __FILE__, __LINE__  }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is different from right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_eq(left, right) if ((left) != (right)) { \
-        return ((TestResult) { ASSERT_EQ, .as.assert_bool = { #left, #right, "left is different from right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is different from right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_nq(left, right) if ((left) == (right)) { \
-        return ((TestResult) { ASSERT_NQ, .as.assert_bool = { #left, #right, "left is equal to right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is equal to right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is greater or equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_lt(left, right) if ((left) >= (right)) { \
-        return ((TestResult) { ASSERT_LT, .as.assert_bool = { #left, #right, "left is greater or equal to right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is greater or equal to right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is less or equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_gt(left, right) if ((left) <= (right)) { \
-        return ((TestResult) { ASSERT_GT, .as.assert_bool = { #left, #right, "left is less or equal to right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is less or equal to right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is greater than right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_lte(left, right) if ((left) > (right)) { \
-        return ((TestResult) { ASSERT_LTE, .as.assert_bool = { #left, #right, "left is greater than right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is greater than right" }, __FILE__, __LINE__ }); \
     }
 
 // error_buffer_write("%s:%d: Assertion failed: left is less than right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_gte(left, right) if ((left) < (right)) { \
-        return ((TestResult) { ASSERT_GTE, .as.assert_bool = { #left, #right, "left is less than right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is less than right" }, __FILE__, __LINE__ }); \
     }
 
-#define test_assert_in_range(min, max, value) if (value < (min) || value > (max)) { \
+#define test_assert_in_range(min, max, value) if ((value) < (min) || (value) > (max)) { \
         return ((TestResult) { ASSERT_RANGE, .as.assert_range = { #min, #max, #value }, __FILE__, __LINE__ }); \
+    }
+
+#define test_assert_null(value) if ((value) != NULL) { \
+        return ((TestResult) { ASSERT_NULL, .as.assert = #value, __FILE__, __LINE__ }); \
+    }
+
+#define test_assert_not_null(value) if ((value) == NULL) { \
+        return ((TestResult) { ASSERT_NULL_NOT, .as.assert = #value, __FILE__, __LINE__ }); \
     }
 
 #define Test(name) TestResult name(void)
@@ -171,21 +175,22 @@ static void print_result(size_t i, TestResult* result) {
             case ASSERT:
                 printf("Assertion Failed: '%s' is false\n", result->as.assert);
                 break;
-            case ASSERT_NEG:
-                printf("Assertion Failed: '%s' is true\n", result->as.assert_neg);
+            case ASSERT_NOT:
+                printf("Assertion Failed: '%s' is true\n", result->as.assert);
                 break;
-            case ASSERT_EQ:
-            case ASSERT_NQ:
-            case ASSERT_LT:
-            case ASSERT_GT:
-            case ASSERT_LTE:
-            case ASSERT_GTE:
+            case ASSERT_BOOL:
                 BooleanOp bool_op = result->as.assert_bool;
                 printf("Assertion Failed: %s (left is '%s', right is '%s')\n", bool_op.msg, bool_op.left, bool_op.right);
                 break;
             case ASSERT_RANGE:
                 RangeAssert range_assert = result->as.assert_range;
                 printf("Assertion Failed: value is out of range (value is '%s', min is '%s', max is '%s')\n", range_assert.value, range_assert.min, range_assert.max);
+                break;
+            case ASSERT_NULL:
+                printf("Assertion Failed: '%s' is not null\n", result->as.assert);
+                break;
+            case ASSERT_NOT_NULL:
+                printf("Assertion Failed: '%s' is null\n", result->as.assert);
                 break;
             case SUCCESS: 
                 assert(0 && "Unreachable");
