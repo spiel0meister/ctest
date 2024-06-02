@@ -32,7 +32,6 @@ TestResult add_test(void) {
     test_assert_lte(add(1, 2), 3);
     test_assert_gt(add(1, 2), 2);
     test_assert_gte(add(1, 2), 3);
-    sleep(2);
 
     return TEST_SUCCES;
 }
@@ -42,7 +41,6 @@ TestResult sub_test(void) {
     test_assert_nq(sub(1, 1), 1);
 
     test_assert_lt(sub(1, 1), 1);
-    sleep(1);
 
     return TEST_SUCCES;
 }
@@ -51,7 +49,6 @@ TestResult mul_test(void) {
     test_assert_eq(mul(1, 1), 1);
     test_assert_eq(mul(1, 0), 0);
     test_assert_eq(mul(0, 1), 0);
-    sleep(1);
 
     return TEST_SUCCES;
 }
@@ -59,7 +56,6 @@ TestResult mul_test(void) {
 TestResult div_test(void) {
     test_assert_eq(div_(1, 1), 1);
     test_assert_eq(div_(2, 2), 1);
-    sleep(3);
 
     return TEST_SUCCES;
 }
