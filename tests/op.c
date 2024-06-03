@@ -32,7 +32,7 @@ Test(add_test) {
     test_assert_gt(add(1, 2), 2);
     test_assert_gte(add(1, 2), 3);
 
-    return TEST_SUCCES;
+    return TEST_SUCCESS;
 }
 
 Test(sub_test) {
@@ -41,7 +41,7 @@ Test(sub_test) {
 
     test_assert_lt(sub(1, 1), 1);
 
-    return TEST_SUCCES;
+    return TEST_SUCCESS;
 }
 
 Test(mul_test) {
@@ -49,20 +49,20 @@ Test(mul_test) {
     test_assert_eq(mul(1, 0), 0);
     test_assert_eq(mul(0, 1), 0);
 
-    return TEST_SUCCES;
+    return TEST_SUCCESS;
 }
 
 Test(div_test) {
     test_assert_eq(div_(1, 1), 1);
     test_assert_eq(div_(2, 2), 1);
 
-    return TEST_SUCCES;
+    return TEST_SUCCESS;
 }
 
 Test(randnum_test) {
     test_assert_in_range(0, 10, randnum(0, 10));
     test_assert_in_range(0, 100, randnum(0, 100));
-    return TEST_SUCCES;
+    return TEST_SUCCESS;
 }
 
 int main(void) {
