@@ -69,42 +69,42 @@ typedef struct {
 typedef TestResult (*test_function_t)(void);
 typedef struct Test Test;
 
-//error_buffer_write("%s:%d: Assertion failed: '%s' is false\n", __FILE__, __LINE__, #expr);
 #define test_assert(expr) if (!(expr)) { \
         return ((TestResult) { ASSERT, .as.assert = #expr, __FILE__, __LINE__ }); \
     }
 
-// error_buffer_write("%s:%d: Assertion failed: '%s' is true\n", __FILE__, __LINE__, #expr);
 #define test_assert_not(expr) if (expr) { \
         return ((TestResult) { ASSERT_NOT, .as.assert = #expr, __FILE__, __LINE__  }); \
     }
 
-// error_buffer_write("%s:%d: Assertion failed: left is different from right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_eq(left, right) if ((left) != (right)) { \
         return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is different from right" }, __FILE__, __LINE__ }); \
     }
 
-// error_buffer_write("%s:%d: Assertion failed: left is equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
+#define test_assert_str_eq(left, right) if (strcmp(left, right) != 0) { \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is different from right" }, __FILE__, __LINE__ }); \
+    }
+
 #define test_assert_nq(left, right) if ((left) == (right)) { \
         return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is equal to right" }, __FILE__, __LINE__ }); \
     }
 
-// error_buffer_write("%s:%d: Assertion failed: left is greater or equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
+#define test_assert_str_nq(left, right) if (strcmp(left, right) == 0) { \
+        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is equal to right" }, __FILE__, __LINE__ }); \
+    }
+
 #define test_assert_lt(left, right) if ((left) >= (right)) { \
         return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is greater or equal to right" }, __FILE__, __LINE__ }); \
     }
 
-// error_buffer_write("%s:%d: Assertion failed: left is less or equal to right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_gt(left, right) if ((left) <= (right)) { \
         return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is less or equal to right" }, __FILE__, __LINE__ }); \
     }
 
-// error_buffer_write("%s:%d: Assertion failed: left is greater than right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_lte(left, right) if ((left) > (right)) { \
         return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is greater than right" }, __FILE__, __LINE__ }); \
     }
 
-// error_buffer_write("%s:%d: Assertion failed: left is less than right (left: %s, right: %s)\n", __FILE__, __LINE__, #left, #right);
 #define test_assert_gte(left, right) if ((left) < (right)) { \
         return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is less than right" }, __FILE__, __LINE__ }); \
     }
