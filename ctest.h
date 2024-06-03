@@ -64,7 +64,7 @@ typedef struct {
     int line;
 }TestResult;
 
-#define TEST_SUCCES ((TestResult) { .type = SUCCESS })
+#define TEST_SUCCESS ((TestResult) { .type = SUCCESS })
 
 typedef TestResult (*test_function_t)(void);
 typedef struct Test Test;
