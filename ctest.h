@@ -57,71 +57,74 @@ typedef union {
 }TestResultAs;
 
 typedef struct {
-    TestResultType type;
-    TestResultAs as;
+    bool success;
+    char* msg;
 
     const char* file;
     int line;
 }TestResult;
 
-#define TEST_SUCCESS ((TestResult) { .type = SUCCESS })
+#define TEST_SUCCESS ((TestResult) { .success = true })
 
 typedef TestResult (*test_function_t)(void);
 typedef struct Test Test;
 
 #define test_assert(expr) if (!(expr)) { \
-        return ((TestResult) { ASSERT, .as.assert = #expr, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: '%s' is false", #expr), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_not(expr) if (expr) { \
-        return ((TestResult) { ASSERT_NOT, .as.assert = #expr, __FILE__, __LINE__  }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: '%s' is true", #expr), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_eq(left, right) if ((left) != (right)) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is different from right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is different from right (left: '%s', right: '%s')", #left, #right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_str_eq(left, right) if (strcmp(left, right) != 0) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is different from right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is different from right (left: '%s', right: '%s')", left, right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_nq(left, right) if ((left) == (right)) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is equal to right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is equal to right (left: '%s', right: '%s')", #left, #right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_str_nq(left, right) if (strcmp(left, right) == 0) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is equal to right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is equal to right (left: '%s', right: '%s')", left, right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_lt(left, right) if ((left) >= (right)) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is greater or equal to right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is greater or equal to right (left: '%s', right: '%s')", #left, #right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_gt(left, right) if ((left) <= (right)) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is less or equal to right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is less or equal to right (left: '%s', right: '%s')", #left, #right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_lte(left, right) if ((left) > (right)) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is greater than right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is greater than right (left: '%s', right: '%s')", #left, #right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_gte(left, right) if ((left) < (right)) { \
-        return ((TestResult) { ASSERT_BOOL, .as.assert_bool = { #left, #right, "left is less than right" }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: left is less than right (left: '%s', right: '%s')", #left, #right), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_in_range(min, max, value) if ((value) < (min) || (value) > (max)) { \
-        return ((TestResult) { ASSERT_RANGE, .as.assert_range = { #min, #max, #value }, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: value is out of range (min: '%s', max: '%s', value: '%s')", #min, #max, #value), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_null(value) if ((value) != NULL) { \
-        return ((TestResult) { ASSERT_NULL, .as.assert = #value, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: '%s' is not null", #value), __FILE__, __LINE__ }); \
     }
 
 #define test_assert_not_null(value) if ((value) == NULL) { \
-        return ((TestResult) { ASSERT_NULL_NOT, .as.assert = #value, __FILE__, __LINE__ }); \
+        return ((TestResult) { false, test_sprintf("Assertion failed: '%s' is null", #value), __FILE__, __LINE__ }); \
     }
 
 #define Test(name) TestResult name(void)
+
+__attribute__((format (printf, 1, 2)))
+    char* sprintf_(const char* fmt, ...);
 
 void test_register_(const char* name, test_function_t test);
 #define test_register(f) test_register_(#f, f)
@@ -137,8 +140,19 @@ void test_run_all_sync_(const char* file, bool print_passes);
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <pthread.h>
+
+char* test_sprintf(const char* fmt, ...) {
+    char buf[1024] = {};
+    va_list args;
+    va_start(args, fmt);
+    int n = vsnprintf(buf, 1024, fmt, args);
+    va_end(args);
+    assert(n < 1024);
+    return strdup(buf);
+}
 
 struct Test {
     const char* name;
@@ -167,36 +181,12 @@ void* test_run_job(void* arg) {
 
 static bool print_passes;
 static void print_result(size_t i, TestResult* result) {
-    if (result->type == SUCCESS) {
+    if (result->success) {
         if (print_passes) printf("\x1b[1;32mPASS\x1b[1;0m: %s\n", tests_global[i].name);
     } else {
-        printf("\x1b[1;31mFAILURE\x1b[1;0m: %s: %s:%d: ", tests_global[i].name, result->file, result->line);
-        switch (result->type) {
-            case ASSERT:
-                printf("Assertion Failed: '%s' is false\n", result->as.assert);
-                break;
-            case ASSERT_NOT:
-                printf("Assertion Failed: '%s' is true\n", result->as.assert);
-                break;
-            case ASSERT_BOOL:
-                BooleanOp bool_op = result->as.assert_bool;
-                printf("Assertion Failed: %s (left is '%s', right is '%s')\n", bool_op.msg, bool_op.left, bool_op.right);
-                break;
-            case ASSERT_RANGE:
-                RangeAssert range_assert = result->as.assert_range;
-                printf("Assertion Failed: value is out of range (value is '%s', min is '%s', max is '%s')\n", range_assert.value, range_assert.min, range_assert.max);
-                break;
-            case ASSERT_NULL:
-                printf("Assertion Failed: '%s' is not null\n", result->as.assert);
-                break;
-            case ASSERT_NOT_NULL:
-                printf("Assertion Failed: '%s' is null\n", result->as.assert);
-                break;
-            case SUCCESS: 
-                assert(0 && "Unreachable");
-            default:
-                assert(0 && "Unhandled");
-        }
+        printf("\x1b[1;31mFAILURE\x1b[1;0m: %s: %s:%d: %s\n", tests_global[i].name, result->file, result->line, result->msg);
+        free(result->msg);
+        result->msg = NULL;
     }
 }
 
@@ -214,7 +204,7 @@ void test_run_all_async_(const char* file, bool print_passes_) {
         TestResult* result;
         pthread_join(threads[i], (void**)&result);
         print_result(i, result);
-        if (result->type == SUCCESS) success++;
+        if (result->success) success++;
         else failed++;
     }
     printf("%s: %ld tests: %ld \x1b[1;32mPASS\x1b[1;0m, %ld \x1b[1;31mFAIL\x1b[1;0m\n", file, tests_count, success, failed);
@@ -227,7 +217,7 @@ void test_run_all_sync_(const char* file, bool print_passes_) {
     for (size_t i = 0; i < tests_count; i++) {
         TestResult* result = test_run_job(&tests_global[i]);
         print_result(i, result);
-        if (result->type == SUCCESS) success++;
+        if (result->success) success++;
         else failed++;
     }
     printf("%s: %ld tests: %ld \x1b[1;32mPASS\x1b[1;0m, %ld \x1b[1;31mFAIL\x1b[1;0m\n", file, tests_count, success, failed);
