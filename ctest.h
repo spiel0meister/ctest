@@ -109,9 +109,12 @@ typedef struct Test Test;
         return ((TestResult) { false, test_sprintf("Assertion failed: left is less than right (left: '%s', right: '%s')", #left, #right), __FILE__, __LINE__ }); \
     }
 
-#define test_assert_in_range(min, max, value) if ((value) < (min) || (value) > (max)) { \
-        return ((TestResult) { false, test_sprintf("Assertion failed: value is out of range (min: '%s', max: '%s', value: '%s')", #min, #max, #value), __FILE__, __LINE__ }); \
-    }
+#define test_assert_in_range(type, value, min, max) do { \
+        type temp = value; \
+        if (temp < (min) || temp > (max)) { \
+            return ((TestResult) { false, test_sprintf("Assertion failed: value is out of range (min: '%s', max: '%s', value: '%s')", #min, #max, #value), __FILE__, __LINE__ }); \
+        } \
+    } while (0)
 
 #define test_assert_null(value) if ((value) != NULL) { \
         return ((TestResult) { false, test_sprintf("Assertion failed: '%s' is not null", #value), __FILE__, __LINE__ }); \

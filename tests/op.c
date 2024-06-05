@@ -60,8 +60,9 @@ Test(div_test) {
 }
 
 Test(randnum_test) {
-    test_assert_in_range(0, 10, randnum(0, 10));
-    test_assert_in_range(0, 100, randnum(0, 100));
+    test_assert_in_range(int, randnum(0, 10), 0, 10);
+    test_assert_in_range(int, randnum(0, 100), 0, 100);
+
     return TEST_SUCCESS;
 }
 
