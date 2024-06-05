@@ -154,7 +154,10 @@ char* test_sprintf(const char* fmt, ...) {
     int n = vsnprintf(buf, 1024, fmt, args);
     va_end(args);
     assert(n < 1024);
-    return strdup(buf);
+
+    char* copy = strdup(buf);
+    assert(copy != NULL);
+    return copy;
 }
 
 struct Test {
