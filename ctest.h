@@ -160,7 +160,7 @@ static void print_result(size_t i, TestResult* result) {
     if (result->success) {
         if (print_passes) printf("\x1b[1;32mPASS\x1b[1;0m: %s\n", tests_global[i].name);
     } else {
-        printf("\x1b[1;31mFAILURE\x1b[1;0m: %s: %s:%d: %s\n", tests_global[i].name, result->file, result->line, result->msg);
+        printf("\x1b[1;31mFAIL\x1b[1;0m: %s: %s:%d: %s\n", tests_global[i].name, result->file, result->line, result->msg);
         free(result->msg);
         result->msg = NULL;
     }
