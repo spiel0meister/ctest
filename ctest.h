@@ -26,36 +26,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef enum {
-    SUCCESS = 0,
-
-    ASSERT,
-    ASSERT_NOT,
-    ASSERT_NULL,
-    ASSERT_NOT_NULL,
-    ASSERT_BOOL,
-    ASSERT_RANGE
-}TestResultType;
-
-
-typedef struct {
-    const char* left;
-    const char* right;
-    const char* msg;
-}BooleanOp;
-
-typedef struct {
-    const char* min;
-    const char* max;
-    const char* value;
-}RangeAssert;
-
-typedef union {
-    const char* assert;
-    BooleanOp assert_bool;
-    RangeAssert assert_range;
-}TestResultAs;
-
 typedef struct {
     bool success;
     char* msg;
