@@ -73,7 +73,7 @@ int main(void) {
     test_register(div_test);
     test_register(randnum_test);
 
-    test_run_all_sync(true);
+    test_run_all_sync();
 
     return 0;
 }
