@@ -97,16 +97,13 @@ typedef struct Test Test;
 #define Test(name) TestResult name(void)
 
 __attribute__((format (printf, 1, 2)))
-    char* sprintf_(const char* fmt, ...);
+    char* test_sprintf(const char* fmt, ...);
 
 void test_register_(const char* name, test_function_t test);
 #define test_register(f) test_register_(#f, f)
 
-void test_run_all_async_(const char* file, bool print_passes);
-#define test_run_all_async(print_passes) test_run_all_async_(__FILE__, print_passes)
-
-void test_run_all_sync_(const char* file, bool print_passes);
-#define test_run_all_sync(print_passes) test_run_all_sync_(__FILE__, print_passes)
+void test_run_all_sync_(const char* file);
+#define test_run_all_sync() test_run_all_sync_(__FILE__)
 #endif // TEST_H
 
 #ifdef TEST_IMPLEMENTATION
@@ -133,7 +130,6 @@ char* test_sprintf(const char* fmt, ...) {
 struct Test {
     const char* name;
     test_function_t test;
-    size_t i;
 };
 
 #ifndef TESTS_MAX
@@ -144,56 +140,26 @@ static Test tests_global[TESTS_MAX] = {};
 static size_t tests_count = 0;
 void test_register_(const char* name, test_function_t test) {
     assert(tests_count < TESTS_MAX);
-    size_t i = tests_count++;
-    tests_global[i] = (Test){ name, test, i };
+    tests_global[tests_count++] = (Test){ name, test };
 }
 
-TestResult results[TESTS_MAX] = {};
-void* test_run_job(void* arg) {
-    Test* test = (Test*)arg;
-    results[test->i] = tests_global[test->i].test();
-    return &results[test->i];
-}
-
-static bool print_passes;
-static void print_result(size_t i, TestResult* result) {
+static void print_result(Test* test, TestResult* result) {
     if (result->success) {
-        if (print_passes) printf("\x1b[1;32mPASS\x1b[1;0m: %s\n", tests_global[i].name);
+        printf("\x1b[1;32mPASS\x1b[1;0m: %s\n", test->name);
     } else {
-        printf("\x1b[1;31mFAIL\x1b[1;0m: %s: %s:%d: %s\n", tests_global[i].name, result->file, result->line, result->msg);
+        printf("\x1b[1;31mFAIL\x1b[1;0m: %s: %s:%d: %s\n", test->name, result->file, result->line, result->msg);
         free(result->msg);
         result->msg = NULL;
     }
 }
 
-void test_run_all_async_(const char* file, bool print_passes_) {
+void test_run_all_sync_(const char* file) {
     size_t success = 0;
     size_t failed = 0;
-    print_passes = print_passes_;
-
-    pthread_t threads[TESTS_MAX] = {};
     for (size_t i = 0; i < tests_count; i++) {
-        pthread_create(&threads[i], NULL, test_run_job, &tests_global[i]);
-    }
-
-    for (size_t i = 0; i < tests_count; i++) {
-        TestResult* result;
-        pthread_join(threads[i], (void**)&result);
-        print_result(i, result);
-        if (result->success) success++;
-        else failed++;
-    }
-    printf("%s: %ld tests: %ld \x1b[1;32mPASS\x1b[1;0m, %ld \x1b[1;31mFAIL\x1b[1;0m\n", file, tests_count, success, failed);
-}
-
-void test_run_all_sync_(const char* file, bool print_passes_) {
-    size_t success = 0;
-    size_t failed = 0;
-    print_passes = print_passes_;
-    for (size_t i = 0; i < tests_count; i++) {
-        TestResult* result = test_run_job(&tests_global[i]);
-        print_result(i, result);
-        if (result->success) success++;
+        TestResult result = tests_global[i].test();
+        print_result(&tests_global[i], &result);
+        if (result.success) success++;
         else failed++;
     }
     printf("%s: %ld tests: %ld \x1b[1;32mPASS\x1b[1;0m, %ld \x1b[1;31mFAIL\x1b[1;0m\n", file, tests_count, success, failed);
