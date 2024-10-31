@@ -1,2 +1,4 @@
+all: example
+
 %: %.c
-	gcc -Wall -Wextra -o $@ $<
+	gcc -Wall -Wextra -ggdb -o $@ $<
