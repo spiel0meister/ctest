@@ -25,9 +25,7 @@ Test(add_test) {
 int main(void) {
     test_register(add_test);
 
-    test_run_all_sync(true); // run tests synchronous
-    // or
-    test_run_all_async(true); // run tests asynchronous
+    test_run_all_sync(true);
 
     return 0;
 }
