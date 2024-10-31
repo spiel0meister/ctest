@@ -1,3 +1,4 @@
 .clangd
 tests/*
 !tests/*.c
+example
